@@ -19,8 +19,8 @@ class UserType(models.Model):
 
 class Message(models.Model):
     id = models.AutoField(primary_key=True)
-    sender = models.ForeignKey('User', models.DO_NOTHING)
-    receiver = models.ForeignKey('User', models.DO_NOTHING)
+    sender = models.ForeignKey('User', models.DO_NOTHING, related_name='sender_user')
+    receiver = models.ForeignKey('User', models.DO_NOTHING, related_name='sender_receiver')
     name = models.CharField(max_length=200)
     text = models.CharField(max_length=200)
     created_at = models.DateTimeField()
@@ -28,21 +28,21 @@ class Message(models.Model):
 
 class ClassroomUser(models.Model):
     id = models.AutoField(primary_key=True)
-    user_id = models.ForeignKey('User', models.DO_NOTHING)
-    classroom_id = models.ForeignKey('Classroom', models.DO_NOTHING)
+    user = models.ForeignKey('User', models.DO_NOTHING, related_name='user_classroom')
+    classroom = models.ForeignKey('Classroom', models.DO_NOTHING, related_name='classroom_user')
 
 
 class Classroom(models.Model):
     id = models.AutoField(primary_key=True)
-    user_id = models.ForeignKey('ClassroomUser', models.DO_NOTHING)
-    material_id = models.ForeignKey('Material', models.DO_NOTHING)
+    user = models.ForeignKey('ClassroomUser', models.DO_NOTHING, related_name='classroomuser')
+    material = models.ForeignKey('Material', models.DO_NOTHING)
     name = models.CharField(max_length=50)
     lecture_name = models.CharField(max_length=50)
 
 
 class Material(models.Model):
     id = models.AutoField(primary_key=True)
-    teacher_id = models.ForeignKey('Classroom', models.DO_NOTHING)
+    teacher = models.ForeignKey('Classroom', models.DO_NOTHING, related_name='teacher_classroom')
     name = models.CharField(max_length=200)
     path = models.CharField(max_length=200)
     created_at = models.DateTimeField()
