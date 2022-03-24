@@ -1,6 +1,9 @@
 import django.core.exceptions
-from django.shortcuts import render
+import datetime
+from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
 from . import models
 # Create your views here.
 
@@ -89,3 +92,48 @@ def get_messages(request):
         result['messages'] = mess
 
         return JsonResponse(result, status=200, safe=False, json_dumps_params={'indent': 3})
+
+
+@csrf_exempt
+def password(request, username, password):
+    if request.method == 'GET':
+        try:
+            user = models.User.objects.get(user_name=username, password=password)
+            result = {
+                'status': 'Spravne heslo'
+            }
+            return JsonResponse(result, safe=False, status=200, json_dumps_params={'indent': 3})
+        except django.core.exceptions.ObjectDoesNotExist:
+            result = {
+                'status': 'Zle heslo'
+            }
+            return JsonResponse(result, status=401, safe=False, json_dumps_params={'indent': 3})
+
+    elif request.method == 'PUT':
+        user = models.User.objects.get(user_name=username)
+        user.password = password
+        user.save()
+        result = {
+            'status': 'Heslo zmenene',
+        }
+        return JsonResponse(result, status=200, safe=False, json_dumps_params={'indent': 3})
+
+
+def find_user(request, username):
+    if request.method == 'GET':
+        try:
+            users = models.User.objects.filter(user_name__icontains=username)[:3]
+            result = {}
+            names = []
+
+            for user in users:
+                names.append(user.first_name + ' ' + user.last_name)
+            result['users'] = names
+
+            return JsonResponse(result, status=200, safe=False, json_dumps_params={'indent': 3})
+
+        except django.core.exceptions.ObjectDoesNotExist:
+            result = {
+                'status': 'Pouzivatel neexistuje',
+            }
+            return JsonResponse(result, status=400, safe=False, json_dumps_params={'indent': 3})
