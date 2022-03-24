@@ -1,7 +1,7 @@
 import django.core.exceptions
 import datetime
 from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from . import models
@@ -162,3 +162,31 @@ def find_user(request, username):
                 'status': 'Pouzivatel neexistuje',
             }
             return JsonResponse(result, status=400, safe=False, json_dumps_params={'indent': 3})
+
+
+@csrf_exempt
+def upload_file(request, user_id):
+    if request.method == 'POST':
+        file_name = request.FILES['file']
+        params = request.POST.dict()
+        path = default_storage.save('materials/' + str(file_name), ContentFile(file_name.read()))
+
+        user = models.User.objects.get(id=user_id)
+
+        if user.user_type_id.type != 1:
+            pass
+
+        classroom = models.Classroom.objects.get(id=int(params['classroom_id']))
+
+        material_count = models.Material.objects.count()
+        new_material = models.Material.objects.create(id=material_count + 1, classroom_id=classroom
+                                                      , name=params['name'], path=path
+                                                      , created_at=datetime.datetime.now())
+        new_material.save()
+        result = {
+            'id': new_material.id,
+            'created_at': new_material.created_at,
+            'teacher': user.first_name + ' ' + user.last_name,
+        }
+
+        return JsonResponse(result, status=200, safe=False, json_dumps_params={'indent': 3})
