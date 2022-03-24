@@ -11,14 +11,17 @@ from . import models
 def login(request, username, password):
     if request.method == 'GET':
         try:
+            # Najdenie pouzivatela
             user = models.User.objects.get(user_name=username, password=password)
 
             u = user.user_type_id
 
+            # Filtrovanie sprav na zaklade user.id
             messages = models.Message.objects.filter(receiver_id=user.id)
             count = messages.count() if messages.count() < 3 else 2
 
             msgs = []
+            # Iterovanie cez spravy
             for i in range(count):
                 receiver = models.User.objects.get(id=messages[i].sender_id)
                 msg = {
@@ -28,19 +31,41 @@ def login(request, username, password):
                 }
                 msgs.append(msg)
 
-            materials = models.Material.objects.filter(teacher_id=user.id)
-            count2 = materials.count() if materials.count() < 3 else 2
+            # V spojovacej tabulke najdenie vsetkych pouzivatelov s prislusnym user id
+            records = models.ClassroomUser.objects.filter(user_id=user.id)
+
+            classrooms_ids = []
+            # Zistenie vsetkych classroom id, kde sa nachadza pouzivatel
+            for record in records:
+                classrooms_ids.append(record.classroom.id)
+
+            print(classrooms_ids)
+
+            materials = []
+            owners = {}
+            # Iterovanie cez jednotlive triedy a hladanie materialov a vlastnikov classroom-ov
+            for ci in classrooms_ids:
+                materials.append(models.Material.objects.filter(classroom_id=ci))
+                users = models.ClassroomUser.objects.filter(classroom=ci)
+                for u in users:
+                    # predpokladam, ze iba jeden ucitel bude mat triedu
+                    if u.user.user_type_id.id == 1:
+                        owners[ci] = u
+                        break
 
             mtrs = []
-            for i in range(count2):
-                receiver = models.User.objects.get(id=materials[i].teacher_id)
-                mtr = {
-                    'material_sender': receiver.first_name + ' ' + receiver.last_name,
-                    'material_name': materials[i].name,
-                    'created_at': materials[i].created_at,
-                }
-                mtrs.append(mtr)
+            # iterovanie cez materialy jednotlivych tried
+            for material in materials:
+                for m in material:
+                    receiver = owners[m.classroom_id.id]
+                    mtr = {
+                        'material_sender': receiver.user.first_name + ' ' + receiver.user.last_name,
+                        'material_name': m.name,
+                        'created_at': m.created_at,
+                    }
+                    mtrs.append(mtr)
 
+            # vytvorenie vysledku
             result = {
                 'id': user.id,
                 'first_name': user.first_name,
@@ -48,7 +73,7 @@ def login(request, username, password):
                 'user_name': user.user_name,
                 'user_type_id': u.id,
                 'messages': msgs,
-                'materials': mtrs,
+                'materials': mtrs[:2],
             }
 
             return JsonResponse(result, status=200, safe=False, json_dumps_params={'indent': 3})

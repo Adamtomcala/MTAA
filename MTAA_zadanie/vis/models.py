@@ -34,15 +34,13 @@ class ClassroomUser(models.Model):
 
 class Classroom(models.Model):
     id = models.AutoField(primary_key=True)
-    user = models.ForeignKey('ClassroomUser', models.DO_NOTHING, related_name='classroomuser')
-    material = models.ForeignKey('Material', models.DO_NOTHING)
     name = models.CharField(max_length=50)
     lecture_name = models.CharField(max_length=50)
 
 
 class Material(models.Model):
     id = models.AutoField(primary_key=True)
-    teacher = models.ForeignKey('Classroom', models.DO_NOTHING, related_name='teacher_classroom')
+    classroom_id = models.ForeignKey('Classroom', models.DO_NOTHING, related_name='classroom_id')
     name = models.CharField(max_length=200)
     path = models.CharField(max_length=200)
     created_at = models.DateTimeField()
