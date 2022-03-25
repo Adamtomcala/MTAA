@@ -101,7 +101,8 @@ def login(request, username, password):
 
 
 # Asi hotovo
-def get_messages(request):
+@csrf_exempt
+def message(request):
     # Tato funkcia sluzi na spracovanie requestov pre zobrazenie sprav pouzivatela na obrazovke SPRAV
     if request.method == 'GET':
         params = request.GET.dict()
@@ -130,6 +131,30 @@ def get_messages(request):
         result['messages'] = mess
 
         return JsonResponse(result, status=200, safe=False, json_dumps_params={'indent': 3})
+
+    # Tento POST request sluzi na spracovanie odoslania spravy pouzivatelovi
+    elif request.method == 'POST':
+        try:
+            params = request.POST.dict()
+            receiver = models.User.objects.get(user_name=params['user_name'])
+            sender = models.User.objects.get(id=params['sender_id'])
+
+            now = datetime.datetime.now()
+            new_message = models.Message.objects.create(sender=sender, receiver=receiver, name=params['name'],
+                                                        text=params['text'], created_at=now)
+            new_message.save()
+
+            result = {
+                'status': 'Odoslane',
+            }
+
+            return JsonResponse(result, status=200, safe=False)
+        # Ak prijimatel neexistuje
+        except django.core.exceptions.ObjectDoesNotExist:
+            result = {
+                'status': 'Pouzivatel neexistuje',
+            }
+            return JsonResponse(result, status=400, safe=False)
 
 
 # Asi hotovo
