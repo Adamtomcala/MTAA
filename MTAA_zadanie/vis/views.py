@@ -11,6 +11,9 @@ from . import models
 
 file_extensions = ['.pdf', '.txt']
 
+numbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
+alfabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+
 
 # Asi hotovo
 def login(request, username, password):
@@ -154,7 +157,7 @@ def message(request):
             result = {
                 'status': 'Pouzivatel neexistuje',
             }
-            return JsonResponse(result, status=400, safe=False)
+            return JsonResponse(result, status=404, safe=False)
 
 
 # Asi hotovo
@@ -184,6 +187,32 @@ def password(request, username, password):
         if password == user.password:
             result = {
                 'status': 'Hesla sa zhoduju',
+            }
+            return JsonResponse(result, status=403, safe=False, json_dumps_params={'indent': 3})
+
+        # Kontrola ci heslo obsahuje velke pismeno
+        find = False
+        for letter in alfabet:
+            if letter in password:
+                find = True
+                break
+        # Ak nie chyba
+        if not find:
+            result = {
+                'status': 'Heslo neobsahuje velke pismeno',
+            }
+            return JsonResponse(result, status=403, safe=False, json_dumps_params={'indent': 3})
+
+        # Kontrola ci heslo obsahuje cislicu
+        find = False
+        for number in numbers:
+            if number in password:
+                find = True
+                break
+        # Ak nie chyba
+        if not find:
+            result = {
+                'status': 'Heslo neobsahuje cislicu',
             }
             return JsonResponse(result, status=403, safe=False, json_dumps_params={'indent': 3})
 
