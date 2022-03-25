@@ -183,7 +183,7 @@ def password(request, username, password):
     elif request.method == 'PUT':
         user = models.User.objects.get(user_name=username)
 
-        # Ak sa stare anove heslo bude zhodovat
+        # Ak sa stare a nove heslo bude zhodovat
         if password == user.password:
             result = {
                 'status': 'Hesla sa zhoduju',
@@ -273,7 +273,14 @@ def upload_file(request, user_id):
         params = request.POST.dict()
 
         # Ak pridavany subor bude mat nepovolenu koncovku -> chyba
-        if str(file_name) in file_extensions:
+        flag = False
+        for extension in file_extensions:
+            name = str(file_name)
+            if extension == name[len(name) - len(extension):]:
+                flag = True
+                break
+
+        if not flag:
             result = {
                 'status': 'Problem pri pridavani suboru.'
             }
@@ -312,3 +319,8 @@ def upload_file(request, user_id):
         material.delete()
 
         return JsonResponse(result, status=200, safe=False, json_dumps_params={'indent': 3})
+
+
+def materials(request):
+    # Tato funkcia bude sluzit na spracovanie requestu na zobrazenie materialov pouzivatela
+    pass
