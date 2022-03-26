@@ -226,7 +226,7 @@ def password(request, username, password):
         return JsonResponse(result, status=201, safe=False, json_dumps_params={'indent': 3})
 
 
-# Asi hotovc
+# Asi hotovo
 def find_user(request, username):
     # Tato funkcia spracuvava GET requesty pri vyhladani pouzivatelov na volanie
     if request.method == 'GET':
@@ -380,5 +380,53 @@ def registration(request):
 
 
 # navrh na akceptacny test
-def add_student_to_classroom(request):
-    pass
+@csrf_exempt
+def add_student_to_classroom(request, classroom_name, user_name):
+    # Pridanie studenta do triedy
+    if request.method == 'POST':
+        # Ak zadany pouzivatel existuje
+        try:
+            user = models.User.objects.get(user_name=user_name)
+            classroom = models.Classroom.objects.get(lecture_name=classroom_name)
+            # Ak zadany pouzivatel neexistuje
+        except django.core.exceptions.ObjectDoesNotExist:
+            result = {
+                'status': 'Pouzivatel neexistuje',
+            }
+            return JsonResponse(result, status=403, safe=False)
+
+        # Ak uz je pouzivatel v triede
+        if models.ClassroomUser.objects.filter(user=user.id, classroom=classroom.id).exists():
+            result = {
+                'status': 'Pouzivatel sa v triede nachadza',
+            }
+            return JsonResponse(result, status=403, safe=False)
+
+        # Ak sa pouzivatel v triede nenachadza
+        new_classroom_user = models.ClassroomUser.objects.create(user=user, classroom=classroom)
+        new_classroom_user.save()
+
+        result = {
+            'status': 'Uspesne pridany',
+        }
+
+        return JsonResponse(result, status=201, safe=False)
+
+    # Odstranenie studenta z triedy
+    elif request.method == 'DELETE':
+        classroom = models.Classroom.objects.get(lecture_name=classroom_name)
+        user = models.User.objects.get(user_name=user_name)
+        classroom_user = models.ClassroomUser.objects.get(classroom=classroom, user=user)
+
+        classroom_user.delete()
+
+        result = {
+            'status': 'Uspesne odstraneny',
+        }
+
+        return JsonResponse(result, status=200, safe=False)
+
+
+def return_classroom_users(request):
+    if request.method == 'GET':
+        pass
