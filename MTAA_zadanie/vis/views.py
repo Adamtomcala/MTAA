@@ -160,6 +160,13 @@ def message(request):
             return JsonResponse(result, status=404, safe=False)
 
 
+def check_password(pswd, req):
+    for element in req:
+        if element in pswd:
+            return True
+    return False
+
+
 # Asi hotovo
 @csrf_exempt
 def password(request, username, password):
@@ -190,27 +197,22 @@ def password(request, username, password):
             }
             return JsonResponse(result, status=403, safe=False, json_dumps_params={'indent': 3})
 
+        # Kontrloa dlzky hesla
+        if len(password < 8):
+            result = {
+                'status': 'Heslo musi mat aspon 8 znakov',
+            }
+            return JsonResponse(result, status=403, safe=False)
+
         # Kontrola ci heslo obsahuje velke pismeno
-        find = False
-        for letter in alfabet:
-            if letter in password:
-                find = True
-                break
-        # Ak nie chyba
-        if not find:
+        if not check_password(password, alfabet):
             result = {
                 'status': 'Heslo neobsahuje velke pismeno',
             }
             return JsonResponse(result, status=403, safe=False, json_dumps_params={'indent': 3})
 
         # Kontrola ci heslo obsahuje cislicu
-        find = False
-        for number in numbers:
-            if number in password:
-                find = True
-                break
-        # Ak nie chyba
-        if not find:
+        if not check_password(password, numbers):
             result = {
                 'status': 'Heslo neobsahuje cislicu',
             }
@@ -323,4 +325,60 @@ def upload_file(request, user_id):
 
 def materials(request):
     # Tato funkcia bude sluzit na spracovanie requestu na zobrazenie materialov pouzivatela
+    pass
+
+
+# Asi hotovo
+@csrf_exempt
+def registration(request):
+    if request.method == 'POST':
+        params = request.POST.dict()
+        # Uz sa v databaze taky pouzivatel nachadza
+        try:
+            user = models.User.objects.get(user_name=params['user_name'])
+
+            result = {
+                'status': f"Pouzivatel %s uz existuje." % user.user_name,
+            }
+
+            return JsonResponse(result, status=401, safe=False)
+        # Registracia pouzivatela
+        except django.core.exceptions.ObjectDoesNotExist:
+            user_type = models.UserType.objects.get(type=params['type'])
+
+            # Kontrloa dlzky hesla
+            if len(params['password'] < 8):
+                result = {
+                    'status': 'Heslo musi mat aspon 8 znakov',
+                }
+                return JsonResponse(result, status=403, safe=False)
+
+            # Kontrola ci heslo obsahuje velke pismeno
+            if not check_password(params['password'], alfabet):
+                result = {
+                    'status': 'Heslo neobsahuje velke pismeno.',
+                }
+                return JsonResponse(result, status=403, safe=False)
+
+            # Kontrola ci heslo obsahuje cislicu
+            if not check_password(params['password'], numbers):
+                result = {
+                    'status': 'Heslo neobsahuje cislicu',
+                }
+                return JsonResponse(result, status=403, safe=False)
+
+            new_user = models.User.objects.create(user_type_id=user_type, first_name=params['first_name'],
+                                                  last_name=params['last_name'], user_name=params['user_name'],
+                                                  password=params['password'])
+            new_user.save()
+
+            result = {
+                'Status': 'Uspesna registracia',
+            }
+
+            return JsonResponse(result, status=200, safe=False)
+
+
+# navrh na akceptacny test
+def add_student_to_classroom(request):
     pass
