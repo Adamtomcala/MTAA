@@ -94,7 +94,7 @@ def login(request, username, password):
                     'status': 'Zle heslo',
                 }
 
-                return JsonResponse(result, safe=False, status=401, json_dumps_params={'indent': 3})
+                return JsonResponse(result, safe=False, status=400, json_dumps_params={'indent': 3})
             except django.core.exceptions.ObjectDoesNotExist:
                 result = {
                     'status': 'Nespravne meno',
@@ -198,7 +198,7 @@ def password(request, username, password):
             return JsonResponse(result, status=403, safe=False, json_dumps_params={'indent': 3})
 
         # Kontrloa dlzky hesla
-        if len(password < 8):
+        if len(password) < 8:
             result = {
                 'status': 'Heslo musi mat aspon 8 znakov',
             }
@@ -325,7 +325,33 @@ def upload_file(request, user_id):
 
 def materials(request):
     # Tato funkcia bude sluzit na spracovanie requestu na zobrazenie materialov pouzivatela
-    pass
+    if request.method == 'GET':
+        params = request.GET.dict()
+
+        fromm, to = (int(params['page']) - 1) * 5, (int(params['page'])) * 5
+
+        classrooms = models.ClassroomUser.objects.filter(user_id=int(params['id']))
+
+        m = []
+        for classroom in classrooms:
+            mts = models.Material.objects.filter(classroom_id=classroom.classroom.id)
+            for mt in mts:
+                m.append(mt)
+
+        final_materials = m[fromm:to]
+
+        result = {}
+        material_result = []
+        for mat in final_materials:
+            material_result.append({
+                'name': mat.name,
+                'created_at': mat.created_at,
+            })
+
+        result['materials'] = material_result
+
+        return JsonResponse(result, status=200, safe=False)
+
 
 
 # Asi hotovo
@@ -347,7 +373,7 @@ def registration(request):
             user_type = models.UserType.objects.get(type=params['type'])
 
             # Kontrloa dlzky hesla
-            if len(params['password'] < 8):
+            if len(params['password']) < 8:
                 result = {
                     'status': 'Heslo musi mat aspon 8 znakov',
                 }
@@ -380,10 +406,13 @@ def registration(request):
 
 
 # navrh na akceptacny test
+# Asi hotovo
 @csrf_exempt
 def add_student_to_classroom(request, classroom_name, user_name):
     # Pridanie studenta do triedy
     if request.method == 'POST':
+        pass
+    elif request.method == 'POST':
         # Ak zadany pouzivatel existuje
         try:
             user = models.User.objects.get(user_name=user_name)
@@ -427,6 +456,24 @@ def add_student_to_classroom(request, classroom_name, user_name):
         return JsonResponse(result, status=200, safe=False)
 
 
-def return_classroom_users(request):
+# Asi hotovo
+def return_classroom_users(request, classroom_name):
     if request.method == 'GET':
-        pass
+        classroom = models.Classroom.objects.get(lecture_name=classroom_name)
+
+        classes = models.ClassroomUser.objects.filter(classroom=classroom)
+
+        users = []
+
+        for c in classes:
+            if c.user.user_type_id.id == 1:
+                continue
+            user = {
+                'name': c.user.first_name + ' ' + c.user.last_name,
+            }
+            users.append(user)
+        result = {
+            'users': users,
+        }
+
+        return JsonResponse(result, status=200, safe=False, json_dumps_params={'indent': 3})

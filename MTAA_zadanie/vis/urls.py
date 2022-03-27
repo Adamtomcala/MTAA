@@ -10,5 +10,6 @@ urlpatterns = [
     path('materials/<str:user_id>', views.upload_file),
     path('material', views.materials),
     path('register', views.registration),
-    path('add_user/<str:classroom_name>/<str:user_name>', views.add_student_to_classroom)
+    path('add_user/<str:classroom_name>/<str:user_name>', views.add_student_to_classroom),
+    path('users/<str:classroom_name>', views.return_classroom_users),
 ]
