@@ -251,10 +251,9 @@ def find_user(request, username):
 # Asi hotovo
 @csrf_exempt
 def upload_file(request, user_id):
-    # Funkcia sluzi na spracovanie GET/POST/DELETE requestu
+    # Funkcia sluzi na spracovanie GET/POST requestu
     # Kvoli akceptacnym testom, bude tam nejaky button, ktory zavola tento predment,
     # Ak bude pouzivatel student vyskoci hlaska o nepovolenie
-    # Ak bude pouzivatel ucitel, tak hlaska o potvrdenie pridania/vymazanie materialu
 
     # Tento GET request je na to overovanie
     if request.method == 'GET':
@@ -308,10 +307,14 @@ def upload_file(request, user_id):
 
         return JsonResponse(result, status=200, safe=False, json_dumps_params={'indent': 3})
 
+
+@csrf_exempt
+def delete_file(request, material_id):
     # Tento Delete sluzi na odstranenie materialu z classroomy
-    elif request.method == 'DELETE':
-        body = json.loads(request.body.decode('utf-8'))
-        material = models.Material.objects.get(id=body['material_id'])
+    # Ak bude pouzivatel ucitel, tak hlaska o potvrdenie pridania/vymazanie materialu
+
+    if request.method == 'DELETE':
+        material = models.Material.objects.get(id=material_id)
 
         result = {
             'material_name': material.name,
@@ -351,7 +354,6 @@ def materials(request):
         result['materials'] = material_result
 
         return JsonResponse(result, status=200, safe=False)
-
 
 
 # Asi hotovo
@@ -408,10 +410,22 @@ def registration(request):
 # navrh na akceptacny test
 # Asi hotovo
 @csrf_exempt
-def add_student_to_classroom(request, classroom_name, user_name):
+def add_student_to_classroom(request, classroom_name, user_name, teacher_name):
     # Pridanie studenta do triedy
-    if request.method == 'POST':
-        pass
+    if request.method == 'GET':
+        user = models.User.objects.get(user_name=teacher_name)
+
+        if user.user_type_id.id == 1:
+            result = {
+                'status': 'Povolene',
+            }
+            return JsonResponse(result, status=200, safe=False)
+
+        result = {
+            'status': 'Nepovolene',
+        }
+        return JsonResponse(result, status=403, safe=False)
+
     elif request.method == 'POST':
         # Ak zadany pouzivatel existuje
         try:
