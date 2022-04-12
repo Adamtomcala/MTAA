@@ -397,7 +397,8 @@ def registration(request):
 
             new_user = models.User.objects.create(user_type_id=user_type, first_name=params['first_name'],
                                                   last_name=params['last_name'], user_name=params['user_name'],
-                                                  password=params['password'])
+                                                  password=params['password'], email=params['email'],
+                                                  id_school=['id_school'], phone=['phone'])
             new_user.save()
 
             result = {

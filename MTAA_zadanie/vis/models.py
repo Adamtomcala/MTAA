@@ -10,6 +10,9 @@ class User(models.Model):
     last_name = models.CharField(max_length=50)
     user_name = models.CharField(max_length=50)
     password = models.CharField(max_length=50)
+    email = models.CharField(max_length=50, default="")
+    id_school = models.CharField(max_length=50, default="")
+    phone = models.CharField(max_length=50, default="")
 
 
 class UserType(models.Model):
