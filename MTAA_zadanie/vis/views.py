@@ -6,6 +6,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
+from django.http import QueryDict
 from . import models
 # Create your views here.
 
@@ -16,17 +17,33 @@ alfabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
 
 
 # Asi hotovo
-def login(request, username, password):
+
+def login1(request):
+    if request.method == 'GET':
+        try:
+            params = request.headers
+            user = models.User.objects.get(user_name=params['Username'])
+
+            item = {
+                'password': user.password,
+            }
+            return JsonResponse(item, safe=False, status=200, json_dumps_params={'indent': 3})
+
+        except django.core.exceptions.ObjectDoesNotExist:
+            return JsonResponse({}, safe=False, status=403, json_dumps_params={'indent': 3})
+
+
+def login(request):
     if request.method == 'GET':
         try:
             # Najdenie pouzivatela
-            user = models.User.objects.get(user_name=username, password=password)
-
+            params = request.headers
+            user = models.User.objects.get(user_name=params['Username'])
             u = user.user_type_id
 
             # Filtrovanie sprav na zaklade user.id
             messages = models.Message.objects.filter(receiver_id=user.id)
-            count = messages.count() if messages.count() < 3 else 2
+            count = messages.count() if messages.count() < 4 else 3
 
             msgs = []
             # Iterovanie cez spravy
@@ -79,6 +96,9 @@ def login(request, username, password):
                 'last_name': user.last_name,
                 'user_name': user.user_name,
                 'user_type_id': u.id,
+                'email': user.email,
+                'school_id': user.id_school,
+                'phone': user.phone,
                 'messages': msgs,
                 'materials': mtrs[:2],
             }
@@ -88,7 +108,7 @@ def login(request, username, password):
         except django.core.exceptions.ObjectDoesNotExist:
             try:
                 # Vyhladanie pouzivatela, so zadanym pouzivatelskym menom
-                models.User.objects.get(user_name=username)
+                models.User.objects.get(user_name=params['username'])
 
                 result = {
                     'status': 'Zle heslo',
@@ -169,25 +189,14 @@ def check_password(pswd, req):
 
 # Asi hotovo
 @csrf_exempt
-def password(request, username, password):
-    # Funkcia sluzi na spracovanie GET/PUT requestov pri zmene hesla pouzivatela
-
-    # Tento GET request sluzi na odoslanie overenia zadaneho stareho hesla
-    if request.method == 'GET':
-        try:
-            user = models.User.objects.get(user_name=username, password=password)
-            result = {
-                'status': 'Spravne heslo',
-            }
-            return JsonResponse(result, safe=False, status=200, json_dumps_params={'indent': 3})
-        except django.core.exceptions.ObjectDoesNotExist:
-            result = {
-                'status': 'Zle heslo',
-            }
-            return JsonResponse(result, status=400, safe=False, json_dumps_params={'indent': 3})
+def password(request):
 
     # Tento PUT request sluzi pre aktualizovanie stareho pouzivatela na nove
-    elif request.method == 'PUT':
+    if request.method == 'PUT':
+        params = QueryDict(request.body)
+
+        username = params.get('user_name')
+        password = params.get('password')
         user = models.User.objects.get(user_name=username)
 
         # Ak sa stare a nove heslo bude zhodovat
@@ -223,7 +232,7 @@ def password(request, username, password):
         result = {
             'status': 'Heslo zmenene',
         }
-        return JsonResponse(result, status=201, safe=False, json_dumps_params={'indent': 3})
+        return JsonResponse(result, status=200, safe=False, json_dumps_params={'indent': 3})
 
 
 # Asi hotovo
@@ -398,7 +407,7 @@ def registration(request):
             new_user = models.User.objects.create(user_type_id=user_type, first_name=params['first_name'],
                                                   last_name=params['last_name'], user_name=params['user_name'],
                                                   password=params['password'], email=params['email'],
-                                                  id_school=['id_school'], phone=['phone'])
+                                                  id_school=params['id_school'], phone=params['phone'])
             new_user.save()
 
             result = {
