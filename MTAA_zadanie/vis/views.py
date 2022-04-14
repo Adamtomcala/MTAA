@@ -123,6 +123,36 @@ def login(request):
                 return JsonResponse(result, safe=False, status=401, json_dumps_params={'indent': 3})
 
 
+@csrf_exempt
+def create_classroom(request):
+    if request.method == 'POST':
+        # Ak pouzivatel existuje
+        try:
+            params = request.POST.dict()
+
+            # Najdenie pouzivatela
+            user = models.User.objects.get(user_name=params['user_name'])
+
+            # Overenie ci je student
+            if user.user_type_id.id != 1:
+                return JsonResponse({}, safe=False, status=400)
+
+            # Vytvorenie novej classroom
+            classroom = models.Classroom.objects.create(name=params['name'],
+                                                        lecture_name=params['lecture_name'])
+
+            classroom.save()
+
+            classroom_user = models.ClassroomUser.objects.create(user=user,
+                                                                 classroom=classroom)
+            classroom_user.save()
+
+            return JsonResponse({}, safe=False, status=200)
+
+        except django.core.exceptions.ObjectDoesNotExist:
+            return JsonResponse({}, safe=False, status=404)
+
+
 # Asi hotovo
 @csrf_exempt
 def message(request):

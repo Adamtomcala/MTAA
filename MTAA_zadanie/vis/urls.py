@@ -14,4 +14,5 @@ urlpatterns = [
     path('register', views.registration),
     path('add_user/<str:classroom_name>/<str:user_name>/<str:teacher_name>', views.add_student_to_classroom),
     path('users/<str:classroom_name>', views.return_classroom_users),
+    path('create_classroom', views.create_classroom),
 ]
