@@ -128,7 +128,7 @@ def login(request):
 def message(request):
     # Tato funkcia sluzi na spracovanie requestov pre zobrazenie sprav pouzivatela na obrazovke SPRAV
     if request.method == 'GET':
-        params = request.GET.dict()
+        params = request.headers
         # Nastavenie rozsahu sprav
         fromm, to = (int(params['page']) - 1) * 5,  (int(params['page'])) * 5
 
@@ -139,7 +139,7 @@ def message(request):
             result = {
                 'status': 'Ziadne spravy'
             }
-            return JsonResponse(result, status=200, safe=True)
+            return JsonResponse(result, status=404, safe=True)
 
         result = {}
         mess = []
