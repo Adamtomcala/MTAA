@@ -7,10 +7,11 @@ from django.http import JsonResponse
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.http import QueryDict
+import base64
 from . import models
 # Create your views here.
 
-file_extensions = ['.pdf', '.txt']
+file_extensions = ['.pdf', '.txt', '.png', '.jpeg']
 
 numbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
 alfabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
@@ -309,28 +310,13 @@ def upload_file(request, user_id):
 
     # Tento POST na upload suboru
     elif request.method == 'POST':
-        file_name = request.FILES['file']
         params = request.POST.dict()
 
-        # Ak pridavany subor bude mat nepovolenu koncovku -> chyba
-        flag = False
-        for extension in file_extensions:
-            name = str(file_name)
-            if extension == name[len(name) - len(extension):]:
-                flag = True
-                break
-
-        if not flag:
-            result = {
-                'status': 'Problem pri pridavani suboru.'
-            }
-            return JsonResponse(result, status=400, safe=False)
-
-        path = default_storage.save('materials/' + str(file_name), ContentFile(file_name.read()))
+        path = default_storage.save('materials/' + str(params['name']) + "." + str(params['file_type']), ContentFile(base64.b64decode(params["file"])))
 
         user = models.User.objects.get(id=user_id)
 
-        classroom = models.Classroom.objects.get(id=int(params['classroom_id']))
+        classroom = models.Classroom.objects.get(name=params['classroom_name'])
 
         now = datetime.datetime.now()
 
