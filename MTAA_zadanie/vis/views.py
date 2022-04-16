@@ -40,7 +40,7 @@ def login(request):
             params = request.headers
             user = models.User.objects.get(user_name=params['Username'])
             u = user.user_type_id
-
+            print(u.id)
             # Filtrovanie sprav na zaklade user.id
             messages = models.Message.objects.filter(receiver_id=user.id)
             count = messages.count() if messages.count() < 4 else 3
@@ -88,14 +88,14 @@ def login(request):
                         'created_at': m.created_at,
                     }
                     mtrs.append(mtr)
-
+            print(user.user_type_id.id)
             # vytvorenie vysledku
             result = {
                 'id': user.id,
                 'first_name': user.first_name,
                 'last_name': user.last_name,
                 'user_name': user.user_name,
-                'user_type_id': u.id,
+                'user_type_id': user.user_type_id.id,
                 'email': user.email,
                 'school_id': user.id_school,
                 'phone': user.phone,
@@ -470,7 +470,8 @@ def add_student_to_classroom(request, classroom_name, user_name, teacher_name):
         # Ak zadany pouzivatel existuje
         try:
             user = models.User.objects.get(user_name=user_name)
-            classroom = models.Classroom.objects.get(lecture_name=classroom_name)
+            classroom = models.Classroom.objects.get(name=classroom_name)
+
             # Ak zadany pouzivatel neexistuje
         except django.core.exceptions.ObjectDoesNotExist:
             result = {
@@ -513,10 +514,9 @@ def add_student_to_classroom(request, classroom_name, user_name, teacher_name):
 # Asi hotovo
 def return_classroom_users(request, classroom_name):
     if request.method == 'GET':
-        classroom = models.Classroom.objects.get(lecture_name=classroom_name)
+        classroom = models.Classroom.objects.get(name=classroom_name)
 
         classes = models.ClassroomUser.objects.filter(classroom=classroom)
-
         users = []
 
         for c in classes:
@@ -531,3 +531,23 @@ def return_classroom_users(request, classroom_name):
         }
 
         return JsonResponse(result, status=200, safe=False, json_dumps_params={'indent': 3})
+
+
+def return_all_classrooms(request):
+    if request.method == 'GET':
+        params = request.headers
+        classes = models.ClassroomUser.objects.filter(user_id=params['id'])
+
+        classrooms = []
+        for c in classes:
+            classroom = {
+                'name': c.classroom.name,
+                'lecture_name': c.classroom.lecture_name,
+            }
+            classrooms.append(classroom)
+            result = {
+                'classrooms': classrooms,
+            }
+
+        return JsonResponse(result, status=200, safe=False, json_dumps_params={'indent': 3})
+
