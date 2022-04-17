@@ -334,12 +334,12 @@ def upload_file(request, user_id):
 
 
 @csrf_exempt
-def delete_file(request, material_id):
+def delete_file(request, material_name):
     # Tento Delete sluzi na odstranenie materialu z classroomy
     # Ak bude pouzivatel ucitel, tak hlaska o potvrdenie pridania/vymazanie materialu
 
     if request.method == 'DELETE':
-        material = models.Material.objects.get(id=material_id)
+        material = models.Material.objects.get(name=material_name)
 
         result = {
             'material_name': material.name,
@@ -484,7 +484,7 @@ def add_student_to_classroom(request, classroom_name, user_name, teacher_name):
 
     # Odstranenie studenta z triedy
     elif request.method == 'DELETE':
-        classroom = models.Classroom.objects.get(lecture_name=classroom_name)
+        classroom = models.Classroom.objects.get(name=classroom_name)
         user = models.User.objects.get(user_name=user_name)
         classroom_user = models.ClassroomUser.objects.get(classroom=classroom, user=user)
 
