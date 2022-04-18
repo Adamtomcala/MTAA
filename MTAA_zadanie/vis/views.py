@@ -370,6 +370,7 @@ def return_classroom_materials(request):
 
         result['materials'] = m
 
+
         return JsonResponse(result, status=200, safe=False)
 
 @csrf_exempt
@@ -584,6 +585,9 @@ def return_all_classrooms(request):
                 'classrooms': classrooms,
             }
             it +=1
+
+        if not classrooms:
+            return JsonResponse({}, status=400, safe=False)
 
         return JsonResponse(result, status=200, safe=False, json_dumps_params={'indent': 3})
 
