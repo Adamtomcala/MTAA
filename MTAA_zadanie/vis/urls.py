@@ -11,6 +11,8 @@ urlpatterns = [
     path('materials/<str:user_id>', views.upload_file),
     path('delete_material/<str:material_name>', views.delete_file),
     path('material', views.materials),
+    path('return_material', views.return_material),
+    path('return_classroom_materials/', views.return_classroom_materials),
     path('register', views.registration),
     path('add_user/<str:classroom_name>/<str:user_name>/<str:teacher_name>/', views.add_student_to_classroom),
     path('users/<str:classroom_name>', views.return_classroom_users),

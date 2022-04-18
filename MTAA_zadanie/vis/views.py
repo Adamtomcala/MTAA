@@ -311,8 +311,8 @@ def upload_file(request, user_id):
     # Tento POST na upload suboru
     elif request.method == 'POST':
         params = request.POST.dict()
-
-        path = default_storage.save('materials/' + str(params['name']) + "." + str(params['file_type']), ContentFile(base64.b64decode(params["file"])))
+        filename = str(params['name'])+"."+str(params['file_type'])
+        path = default_storage.save('materials/' + filename, ContentFile(base64.b64decode(params["file"])))
 
         user = models.User.objects.get(id=user_id)
 
@@ -321,7 +321,7 @@ def upload_file(request, user_id):
         now = datetime.datetime.now()
 
         new_material = models.Material.objects.create(classroom_id=classroom,
-                                                      name=params['name'], path=path,
+                                                      name=filename, path=path,
                                                       created_at=now)
         new_material.save()
         result = {
@@ -332,6 +332,45 @@ def upload_file(request, user_id):
 
         return JsonResponse(result, status=200, safe=False, json_dumps_params={'indent': 3})
 
+
+
+def return_material(request):
+    if request.method == 'GET':
+        params = request.headers
+        # meno triedy a meno suboru
+        classroom = models.Classroom.objects.get(name=params['classname'])
+
+        material = models.Material.objects.get(classroom_id=classroom, name=params['filename'])
+
+        file = open("materials/" + params['filename'], "rb").read()
+
+        encoded_file = base64.b64encode(file)
+        encoded_file_string = encoded_file.decode("ascii")
+
+
+
+        result = {
+            'name': material.name,
+            'file': encoded_file_string
+        }
+
+        return JsonResponse(result, status=200, safe=False)
+
+
+def return_classroom_materials(request):
+    if request.method == 'GET':
+        params = request.headers
+        classroom = models.Classroom.objects.get(name=params['name'])
+        materials = models.Material.objects.filter(classroom_id=classroom)
+
+        result = {}
+        m = []
+        for material in materials:
+            m.append({'name': material.name})
+
+        result['materials'] = m
+
+        return JsonResponse(result, status=200, safe=False)
 
 @csrf_exempt
 def delete_file(request, material_name):
@@ -523,10 +562,20 @@ def return_all_classrooms(request):
     if request.method == 'GET':
         params = request.headers
         classes = models.ClassroomUser.objects.filter(user_id=params['id'])
+        teacher = []
+        for classe in classes:
+            users = models.ClassroomUser.objects.filter(classroom_id=classe.classroom)
+            for user in users:
+                if user.user.user_type_id.id == 1:
+                    teacher.append(user.user)
+                    break
 
+
+        it = 0
         classrooms = []
         for c in classes:
             classroom = {
+                'teacher': teacher[it].first_name + " " + teacher[it].last_name,
                 'name': c.classroom.name,
                 'lecture_name': c.classroom.lecture_name,
             }
@@ -534,6 +583,7 @@ def return_all_classrooms(request):
             result = {
                 'classrooms': classrooms,
             }
+            it +=1
 
         return JsonResponse(result, status=200, safe=False, json_dumps_params={'indent': 3})
 
