@@ -9,7 +9,7 @@ urlpatterns = [
     path('user/', views.password),
     path('name/<str:username>', views.find_user),
     path('materials/<str:user_id>', views.upload_file),
-    path('delete_material/<str:material_name>', views.delete_file),
+    path('delete_material/<str:material_name>/<int:user_id>', views.delete_file),
     path('material', views.materials),
     path('return_material', views.return_material),
     path('return_classroom_materials/', views.return_classroom_materials),

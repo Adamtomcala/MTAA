@@ -2,6 +2,7 @@ import django.core.exceptions
 import datetime
 import json
 import os
+from os.path import exists
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.core.files.storage import default_storage
@@ -89,7 +90,7 @@ def login(request):
                         'created_at': m.created_at,
                     }
                     mtrs.append(mtr)
-            print(user.user_type_id.id)
+
             # vytvorenie vysledku
             result = {
                 'id': user.id,
@@ -101,7 +102,7 @@ def login(request):
                 'school_id': user.id_school,
                 'phone': user.phone,
                 'messages': msgs,
-                'materials': mtrs[:2],
+                'materials': mtrs[:3],
             }
 
             return JsonResponse(result, status=200, safe=False, json_dumps_params={'indent': 3})
@@ -139,16 +140,22 @@ def create_classroom(request):
                 return JsonResponse({}, safe=False, status=400)
 
             # Vytvorenie novej classroom
-            classroom = models.Classroom.objects.create(name=params['name'],
+            try:
+                models.Classroom.objects.get(name=params['name'],
                                                         lecture_name=params['lecture_name'])
+                return JsonResponse({}, status=404, safe=False)
 
-            classroom.save()
+            except django.core.exceptions.ObjectDoesNotExist:
+                classroom = models.Classroom.objects.create(name=params['name'],
+                                                            lecture_name=params['lecture_name'])
 
-            classroom_user = models.ClassroomUser.objects.create(user=user,
-                                                                 classroom=classroom)
-            classroom_user.save()
+                classroom.save()
 
-            return JsonResponse({}, safe=False, status=200)
+                classroom_user = models.ClassroomUser.objects.create(user=user,
+                                                                     classroom=classroom)
+                classroom_user.save()
+
+                return JsonResponse({}, safe=False, status=200)
 
         except django.core.exceptions.ObjectDoesNotExist:
             return JsonResponse({}, safe=False, status=404)
@@ -192,6 +199,9 @@ def message(request):
             params = request.POST.dict()
             receiver = models.User.objects.get(user_name=params['user_name'])
             sender = models.User.objects.get(id=params['sender_id'])
+
+            if receiver.id == sender.id:
+                return JsonResponse({}, status=403, safe=False)
 
             now = datetime.datetime.now()
             new_message = models.Message.objects.create(sender=sender, receiver=receiver, name=params['name'],
@@ -312,6 +322,18 @@ def upload_file(request, user_id):
     elif request.method == 'POST':
         params = request.POST.dict()
         filename = str(params['name'])+"."+str(params['file_type'])
+
+        counter = 0
+        while True:
+            if counter == 0:
+                if not exists('materials/' + filename):
+                    break
+            else:
+                if not exists('materials/' + params['name'] + str(counter) + "." + str(params['file_type'])):
+                    filename = params['name'] + str(counter) + "." + str(params['file_type'])
+                    break
+            counter += 1
+
         path = default_storage.save('materials/' + filename, ContentFile(base64.b64decode(params["file"])))
 
         user = models.User.objects.get(id=user_id)
@@ -374,21 +396,38 @@ def return_classroom_materials(request):
         return JsonResponse(result, status=200, safe=False)
 
 @csrf_exempt
-def delete_file(request, material_name):
+def delete_file(request, material_name, user_id):
     # Tento Delete sluzi na odstranenie materialu z classroomy
     # Ak bude pouzivatel ucitel, tak hlaska o potvrdenie pridania/vymazanie materialu
 
     if request.method == 'DELETE':
-        material = models.Material.objects.get(name=material_name)
+        try:
+            user = models.User.objects.get(id=user_id)
 
-        result = {
-            'material_name': material.name,
-        }
+            clasroom_user = models.ClassroomUser.objects.filter(user_id=user.id)
 
-        os.remove(material.path)
-        material.delete()
+            material = models.Material.objects.get(name=material_name)
 
-        return JsonResponse(result, status=200, safe=False, json_dumps_params={'indent': 3})
+            flag = False
+            for ci in clasroom_user:
+                if material.classroom_id.id == ci.classroom.id:
+                    flag = True
+                    break
+
+            if not flag:
+                return JsonResponse({}, status=403, safe=False, json_dumps_params={'indent': 3})
+
+            result = {
+                'material_name': material.name,
+            }
+
+            os.remove(material.path)
+            material.delete()
+
+            return JsonResponse(result, status=200, safe=False, json_dumps_params={'indent': 3})
+
+        except django.core.exceptions.ObjectDoesNotExist:
+            return JsonResponse({}, status=404, safe=False, json_dumps_params={'indent': 3})
 
 
 def materials(request):
